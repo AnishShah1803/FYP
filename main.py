@@ -8,7 +8,7 @@ from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 documents = {'Author1': [1], 'Author2': [2], 'Author3': [3], 'Author4': [4], 'Author5': [5]
          }
-#plagiairised document = ""
+plagiairised_document = "altered1_doc1"
 def paragraphs (fileobj, seperator = '/n'):
     #iterate a fileobj by paragraph
     lines = []
@@ -30,14 +30,21 @@ def reading_in_files(filenames):
     #print(paragraph_lists)
     return paragraph_lists
     # return '\n'.join(strings)
+def chunking_plagdocs():
+    plagiarised_paralist = [[]]
+    with open(f'data/altered1_doc1.txt')as l:
+        plagpara = paragraphs(l)
+        for plagpara, group in zip(plagpara, it.cycle(plagiarised_paralist)):
+            group.append(plagpara)
+    return plagiarised_paralist
 def remove_numbers(text):
     text_nonum = re.sub(r'\d+', '', text)
     return text_nonum
 
-# for author,files in documents.items():
-#     text_by_author[author] = reading_in_files(files)
+
 for author,files in documents.items():
     docs = reading_in_files(files)
+    plagdoc = chunking_plagdocs()
     for i in docs[0]:
         #print(i)
         paranumber = i.count("\n")
