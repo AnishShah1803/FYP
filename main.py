@@ -45,10 +45,37 @@ def remove_numbers(text):
 for author,files in documents.items():
     docs = reading_in_files(files)
     plagdoc = chunking_plagdocs()
+    for doc in plagdoc[0]:
+        plagparanumber = doc.count("\n")
+        plag_paragraphsplit = doc.split("\n")
+        tempnum = plagparanumber
+        plagparalist = []
+        pl = 0
+        tag_plag_list = []
+        while pl<=tempnum:
+            plaglabel = "paragraph" + str(pl+1)
+            plagparalist.append(plaglabel)
+            pl = pl+1
+        for val in plag_paragraphsplit:
+            remove_numbers(val)
+            plag_tokens = nltk.word_tokenize(val)
+            plagtagging = nltk.pos_tag(plag_tokens)
+            plagwords,ptaglist = zip(*plagtagging)
+            pls = ""
+            for pj in ptaglist:
+                pls = pls + pj + " "
+            tag_plag_list.append(pls)
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
+        plag_vectorizer = TfidfVectorizer()
+        plagtfidfMat = plag_vectorizer.fit_transform(tag_plag_list)
+        plag_featurenames = sorted(plag_vectorizer.get_feature_names())
+        plagSk = pd.DataFrame(plagtfidfMat.todense(), index=(plagparalist), columns=plag_featurenames)
+
     for i in docs[0]:
         #print(i)
         paranumber = i.count("\n")
-        paragraphlist = i.split("\n")
+        paragraphsplit = i.split("\n")
         k = paranumber
         paralist = []
         p = 0
@@ -57,7 +84,7 @@ for author,files in documents.items():
             paralabel = "paragraph" + str(p+1)
             paralist.append(paralabel)
             p = p + 1
-        for x in paragraphlist:
+        for x in paragraphsplit:
             remove_numbers(x)
             tokens = nltk.word_tokenize(x)
             postagging = nltk.pos_tag(tokens)
@@ -69,17 +96,16 @@ for author,files in documents.items():
             tag_para_list.append(s)
             #print(taglist)
         #print(tag_para_list)
-        from sklearn.feature_extraction.text import CountVectorizer
-        from sklearn.metrics.pairwise import cosine_similarity
         vectorizer = TfidfVectorizer()
         tfIdfMat = vectorizer.fit_transform(tag_para_list)
-        print(tfIdfMat.shape)
+        ##print(tfIdfMat.shape)
         #print(vectorizer.vocabulary_)
         feature_names = sorted(vectorizer.get_feature_names())
         #print(k)
         skDocsTfIdfdf = pd.DataFrame(tfIdfMat.todense(), index=(paralist), columns=feature_names)
-        print(skDocsTfIdfdf)
-
+        ##print(skDocsTfIdfdf)
+        csim = cosine_similarity(plagtfidfMat,tfIdfMat)
+        print(csim)
 
 
         #print(paranumber)
