@@ -63,7 +63,10 @@ for author,files in documents.items():
             plagwords,ptaglist = zip(*plagtagging)
             pls = ""
             for pj in ptaglist:
-                pls = pls + pj + " "
+                if pj == 'NN':
+                    pls = pls + pj + " "
+                elif pj == 'NNS':
+                    pls = pls + pj + " "
             tag_plag_list.append(pls)
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
@@ -92,7 +95,10 @@ for author,files in documents.items():
             #print(x)
             s = ""
             for j in taglist:
-                s = s + j + " "
+                if j == 'NN':
+                    s = s + j + " "
+                elif j == 'NNS':
+                    s = s + j + " "
             tag_para_list.append(s)
             #print(taglist)
         #print(tag_para_list)
@@ -105,7 +111,8 @@ for author,files in documents.items():
         skDocsTfIdfdf = pd.DataFrame(tfIdfMat.todense(), index=(paralist), columns=feature_names)
         ##print(skDocsTfIdfdf)
         csim = cosine_similarity(plagtfidfMat,tfIdfMat)
-        print(csim)
+        csimsk = pd.DataFrame(csim)
+        print(csimsk)
 
 
         #print(paranumber)
@@ -113,13 +120,3 @@ for author,files in documents.items():
     #print(doc[0])
     # paranumber = doc[1].count("\n")
     # print(paranumber)
-
-
-
-
-
-
-
-
-
-
