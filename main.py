@@ -6,7 +6,7 @@ import pandas as pd
 import itertools as it
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
-documents = {'Author1': [1], 'Author2': [2], 'Author3': [3], 'Author4': [4], 'Author5': [5]
+documents = {'originaldoc_1': [1], 'originaldoc_2': [2], 'originaldoc_3': [3], 'originaldoc_4': [4], 'originaldoc_5': [5]
          }
 plagiairised_document = "altered1_doc1"
 def paragraphs (fileobj, seperator = '/n'):
@@ -21,30 +21,20 @@ def paragraphs (fileobj, seperator = '/n'):
     yield ''.join(lines)
 def reading_in_files(filenames):
     paragraph_lists = [[]]
-    for filename in filenames:
-        with open(f'data/originaldoc_{filename}.txt') as f:
-            paras = paragraphs(f)
-            for para, group in zip(paras, it.cycle(paragraph_lists)):
-                group.append(para)
-
-    #print(paragraph_lists)
+    with open(f'data/{filenames}.txt') as f:
+        paras = paragraphs(f)
+        for para, group in zip(paras, it.cycle(paragraph_lists)):
+            group.append(para)
     return paragraph_lists
     # return '\n'.join(strings)
-def chunking_plagdocs():
-    plagiarised_paralist = [[]]
-    with open(f'data/altered1_doc1.txt')as l:
-        plagpara = paragraphs(l)
-        for plagpara, group in zip(plagpara, it.cycle(plagiarised_paralist)):
-            group.append(plagpara)
-    return plagiarised_paralist
 def remove_numbers(text):
     text_nonum = re.sub(r'\d+', '', text)
     return text_nonum
 
 
-for author,files in documents.items():
+for files,authornumber in documents.items():
     docs = reading_in_files(files)
-    plagdoc = chunking_plagdocs()
+    plagdoc = reading_in_files(plagiairised_document)
     for doc in plagdoc[0]:
         plagparanumber = doc.count("\n")
         plag_paragraphsplit = doc.split("\n")
