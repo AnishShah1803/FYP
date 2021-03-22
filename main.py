@@ -1,17 +1,15 @@
 import nltk
 import re
-import string
-import sklearn
 import pandas as pd
 import itertools as it
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 documents = {'originaldoc_1': [1], 'originaldoc_2': [2], 'originaldoc_3': [3], 'originaldoc_4': [4], 'originaldoc_5': [5]
          }
-plagiairised_document = "altered1_doc1"
+input_document = "altered3_doc1"
 def paragraphs (fileobj, seperator = '/n'):
     #iterate a fileobj by paragraph
     lines = []
@@ -50,44 +48,62 @@ def tagmaker(splitdocument,paragraphnum):
         words,taglist = zip(*applytags)
         tagstring = " "
         for j in taglist:
-            if j == 'NN':
+            if j == 'NNS':
                 tagstring = tagstring + j + " "
-            elif j == 'NNS':
+            elif j == 'NN':
+                tagstring = tagstring + j + " "
+            elif j == 'NNP':
                 tagstring = tagstring + j + " "
         document_taglist.append(tagstring)
+        #print(tagstring)
     return paralist,document_taglist
 
-for files,authornumber in documents.items():
-    docs = reading_in_files(files)
-    plagdoc = reading_in_files(plagiairised_document)
-    print("Document in question: " + plagiairised_document)
+for files,authornumber in documents.items():#for each file and authornumber in the dictionary split up as such
+    docs = reading_in_files(files) #chunk file into paragraphs
+    inputDoc = reading_in_files(input_document) #chunk file into paragraphs
+    print("Document in question: " + input_document)
+    #displays the "input" document being assessed
     print("Document being compared against: " + files)
-    for doc in plagdoc[0]:
-        plagparanumber = doc.count("\n")
-        plag_paragraphsplit = doc.split("\n")
-        plagparalist,tag_plag_list = tagmaker(plag_paragraphsplit,plagparanumber)
-        plag_vectorizer = TfidfVectorizer()
-        plagtfidfMat = plag_vectorizer.fit_transform(tag_plag_list)
-        plag_featurenames = sorted(plag_vectorizer.get_feature_names())
-        plagSk = pd.DataFrame(plagtfidfMat.todense(), index=(plagparalist), columns=plag_featurenames)
+    #displays the document that the "input" document is being checked against
+    for doc in inputDoc[0]:#going through the input document
+        inputParanumber = doc.count("\n")#counts the number of paragraphs
+        input_paragraphsplit = doc.split("\n")#splits the document into paragraphs
+        inputparalist, tag_input_list = tagmaker(input_paragraphsplit, inputParanumber)
+        #retrieves the paragraph labels and tags
+        input_vectorizer = TfidfVectorizer()#creates a tfidf vectorizer
+        inputTfidf = input_vectorizer.fit_transform(tag_input_list)#fits the vectorizer to the tags
 
-    for i in docs[0]:
-        #print(i)
-        paranumber = i.count("\n")
-        paragraphsplit = i.split("\n")
-        paralist, tag_para_list = tagmaker(plag_paragraphsplit, plagparanumber)
-        vectorizer = TfidfVectorizer()
-        tfIdfMat = vectorizer.fit_transform(tag_para_list)
-        ##print(tfIdfMat.shape)
-        #print(vectorizer.vocabulary_)
-        feature_names = sorted(vectorizer.get_feature_names())
-        #print(k)
-        skDocsTfIdfdf = pd.DataFrame(tfIdfMat.todense(), index=(paralist), columns=feature_names)
-        ##print(skDocsTfIdfdf)
-        csim = cosine_similarity(plagtfidfMat,tfIdfMat)
-        csimsk = pd.DataFrame(csim,index = (plagparalist), columns = (paralist))
-        print(csimsk)
-
+    for i in docs[0]:#for each document in the docs list
+        paranumber = i.count("\n") #counts the number of paragraphs
+        paragraphsplit = i.split("\n")#splits the documents into paragraphsplit list
+        paralist, tag_para_list = tagmaker(paragraphsplit, paranumber)#retrieves the paragraph labels and tags
+        vectorizer = TfidfVectorizer() #creates a tfidf vectorizer
+        docTfidf = vectorizer.fit_transform(tag_para_list) #fits  the vectorizer to the tags
+        csim = cosine_similarity(inputTfidf, docTfidf)
+        #calculates the cosine similarity between input document and document from corpus
+        csimdataframe = pd.DataFrame(csim,index = (inputparalist), columns = (paralist))
+        #creates pandas dataframe to display cosine similarity
+        percentagesum = 0 #variable to sum max similarities
+        for rowIter in range(0,len(csim)):#from 0 to the number of paragraphs in input document
+            values = csim[rowIter] #sets the similarities for the paragraph in index rowIter to values
+            highvalue = max(values)#calculates the highest similarity between the paragraphs
+            percentagesum = percentagesum + highvalue #adds the highest similarity to the percentage sum
+            for colIter in range(0,len(values)):#from 0 to the number of paragraphs in corpus document
+                if values[colIter] >= 0.999:
+                    print(" ")
+                    output_result = str(inputparalist[rowIter] + " in the assessed document has a strong match to "+
+                                        paralist[colIter] + " in the original document " + files)
+                    #displays paragraphs that are similar to one another
+                    print(output_result)
+                    print(" ")
+                    print(inputparalist[rowIter] + " of assessed doc :\n" + input_paragraphsplit[rowIter])
+                    print(" ")
+                    print(paralist[colIter] + " of " + files + " :\n" + paragraphsplit[colIter])
+                    print(" ")
+        print("Average similarity is :" + (str((percentagesum/len(csim))*100)))#displays the average similarity
+        print(" ")
+        print(csimdataframe)#displays the cosine similarity matrix
+        print("***********")
 
         #print(paranumber)
 
