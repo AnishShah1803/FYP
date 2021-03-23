@@ -7,6 +7,7 @@ import textstat
 from scipy.sparse import coo_matrix, hstack
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 documents = {'originaldoc_1': [1], 'originaldoc_2': [2], 'originaldoc_3': [3], 'originaldoc_4': [4], 'originaldoc_5': [5]
@@ -70,6 +71,8 @@ def tagmaker(splitdocument,paragraphnum):
                 tagstring = tagstring + j + " "
             elif j == 'VBD':
                 tagstring = tagstring + j + " "
+            elif j == 'VBP':
+                tagstring = tagstring + j + " "
         document_taglist.append(tagstring)
         #print(tagstring)
     npcol = np.array(col)
@@ -90,7 +93,7 @@ for files,authornumber in documents.items():#for each file and authornumber in t
         input_paragraphsplit = doc.split("\n")#splits the document into paragraphs
         inputparalist, tag_input_list,npinputcol,npinputpara,npinputsentdata,npinputwordcount = tagmaker(input_paragraphsplit, inputParanumber)
         #retrieves the paragraph labels and tags
-        input_vectorizer = TfidfVectorizer()#creates a tfidf vectorizer
+        input_vectorizer = CountVectorizer()#creates a tfidf vectorizer
         inputTfidf = input_vectorizer.fit_transform(tag_input_list)#fits the vectorizer to the tags
         inputsentencematrix = coo_matrix((npinputsentdata,(npinputpara,npinputcol)), shape=((inputParanumber+1),1))
         inputwordmatrix = coo_matrix((npinputwordcount,(npinputpara,npinputcol)),shape=((inputParanumber+1),1))
@@ -100,35 +103,51 @@ for files,authornumber in documents.items():#for each file and authornumber in t
         paranumber = i.count("\n") #counts the number of paragraphs
         paragraphsplit = i.split("\n")#splits the documents into paragraphsplit list
         paralist, tag_para_list,npdoccol, npparagraphnum, npsentdata, npdocwordcount = tagmaker(paragraphsplit, paranumber)#retrieves the paragraph labels and tags
-        vectorizer = TfidfVectorizer() #creates a tfidf vectorizer
+        vectorizer = CountVectorizer() #creates a tfidf vectorizer
         docTfidf = vectorizer.fit_transform(tag_para_list) #fits  the vectorizer to the tags
         docsentencematrix = coo_matrix((npsentdata,(npparagraphnum,npdoccol)), shape=((paranumber+1),1))
         docwordmatrix = coo_matrix((npdocwordcount,(npparagraphnum, npdoccol)),shape=((paranumber+1),1))
-        tempdocmatrix = hstack([docTfidf,docsentencematrix])
+        tempdocmatrix = hstack([docTfidf,docwordmatrix])
         docmatrix = hstack([tempdocmatrix,docwordmatrix])
-        csim = cosine_similarity(inputmatrix, docmatrix)
+        csim = cosine_similarity(inputTfidf, docTfidf)
         #calculates the cosine similarity between input document and document from corpus
         csimdataframe = pd.DataFrame(csim,index = (inputparalist), columns = (paralist))
         #creates pandas dataframe to display cosine similarity
         percentagesum = 0 #variable to sum max similarities
+        sumcounter = 0
+        percentagesum = 0
         for rowIter in range(0,len(csim)):#from 0 to the number of paragraphs in input document
             values = csim[rowIter] #sets the similarities for the paragraph in index rowIter to values
-            highvalue = max(values)#calculates the highest similarity between the paragraphs
-            percentagesum = percentagesum + highvalue #adds the highest similarity to the percentage sum
+
             for colIter in range(0,len(values)):#from 0 to the number of paragraphs in corpus document
-                if values[colIter] >= 0.99:
-                    print(" ")
-                    output_result = str(inputparalist[rowIter] + " in the assessed document has a strong match to "+
+                if (((input_paragraphsplit[rowIter].count(" ")) * 0.80) < (paragraphsplit[colIter].count(" ")) < ((input_paragraphsplit[rowIter].count(" ")) * 1.20)) or (((paragraphsplit[colIter].count(" ")) * 0.80) < (input_paragraphsplit[rowIter].count(" ")) < ((paragraphsplit[colIter].count(" ")) * 1.20)):
+                    if values[colIter] >= 0.90:
+                        print(" ")
+                        percentagesum = percentagesum + values[colIter]
+                        sumcounter = sumcounter + 1
+                        #print((len(input_paragraphsplit[rowIter])))
+                        #print(input_paragraphsplit[rowIter].count(" "))
+                        #print(paragraphsplit[colIter].count(" "))
+                        #print((len(paragraphsplit[colIter])))
+                        output_result = str(inputparalist[rowIter] + " in the assessed document has a strong match to "+
                                         paralist[colIter] + " in the original document " + files)
-                    #displays paragraphs that are similar to one another
-                    print(output_result)
-                    print(" ")
-                    print(inputparalist[rowIter] + " of assessed doc :\n" + input_paragraphsplit[rowIter])
-                    print(paralist[colIter] + " of " + files + " :\n" + paragraphsplit[colIter])
-                    print(" ")
-        print("Maximum similarity is :" + (str((percentagesum/len(csim))*100)))#displays the average similarity
+                        #displays paragraphs that are similar to one another
+                        print(output_result)
+                        print(" ")
+                        print(inputparalist[rowIter] + " of assessed doc :\n" + input_paragraphsplit[rowIter])
+                        print(paralist[colIter] + " of " + files + " :\n" + paragraphsplit[colIter])
+                        print(" ")
+                        print("The similarity percentage between the two is : " + str(values[colIter]*100))
+                        break
+                    break
+
+        #print("Maximum similarity is :" + (str((percentagesum/len(csim))*100)))#displays the average similarity
+        print(sumcounter)
+        if sumcounter <=1:
+            print("There are no matches between the document")
+        else:
+
+            print("Similarity between documents is : " + str((percentagesum/sumcounter)*100))
         print(" ")
         print(csimdataframe)#displays the cosine similarity matrix
         print("***********")
-
-
