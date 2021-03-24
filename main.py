@@ -1,16 +1,12 @@
 import nltk
 import re
 import pandas as pd
-import numpy as np
 import itertools as it
 import textstat
-from scipy.sparse import coo_matrix, hstack
-from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 pd.set_option("display.max_rows", None, "display.max_columns", None)
-class tf:
+class tf: #
     header = "\033[95m"
     underline = "\033[4m"
     bold = "\033[1m"
@@ -79,6 +75,7 @@ def tagmaker(splitdocument,paragraphnum):
 
 def main():
     document_check = 0
+    input_alteration = 0
     while True:
         try:
             document_check = int(input("Enter the document number you would liketo check between 1 and 5: "))
@@ -89,9 +86,10 @@ def main():
             if 1<= document_check <= 5:
                 pass
             else:
-                main()
+                continue
+
             break
-    input_alteration = 0
+
     while True:
         try:
             input_alteration = int(input("Enter the alteration number you would like to check between 1 and 3: "))
@@ -102,11 +100,12 @@ def main():
             if 1<= input_alteration <= 3:
                 pass
             else:
-                main()
+                continue
             break
 
     input_document = ("altered"+str(input_alteration)+"_doc"+str(document_check))
     all_similarities = []
+    matches = []
     for files,authornumber in documents.items():#for each file and authornumber in the dictionary split up as such
         docs = reading_in_files(files) #chunk file into paragraphs
         inputDoc = reading_in_files(input_document) #chunk file into paragraphs
@@ -120,13 +119,13 @@ def main():
             input_paragraphsplit = doc.split("\n")#splits the document into paragraphs
             inputparalist, tag_input_list = tagmaker(input_paragraphsplit, inputParanumber)
             #retrieves the paragraph labels and tags
-            input_vectorizer = CountVectorizer()#creates a tfidf vectorizer
+            input_vectorizer = TfidfVectorizer()#creates a tfidf vectorizer
             inputTfidf = input_vectorizer.fit_transform(tag_input_list)#fits the vectorizer to the tags
         for i in docs[0]:#for each document in the docs list
             paranumber = i.count("\n") #counts the number of paragraphs
             paragraphsplit = i.split("\n")#splits the documents into paragraphsplit list
             paralist, tag_para_list = tagmaker(paragraphsplit, paranumber)#retrieves the paragraph labels and tags
-            vectorizer = CountVectorizer() #creates a tfidf vectorizer
+            vectorizer = TfidfVectorizer() #creates a tfidf vectorizer
             docTfidf = vectorizer.fit_transform(tag_para_list) #fits  the vectorizer to the tags
             csim = cosine_similarity(inputTfidf, docTfidf)
             #calculates the cosine similarity between input document and document from corpus
@@ -142,9 +141,9 @@ def main():
                     inputsentencecount = textstat.sentence_count(input_paragraphsplit[rowIter])
                     docsentencecount = textstat.sentence_count(paragraphsplit[colIter])
                     if (((input_paragraphsplit[rowIter].count(" ")) * 0.80) < (paragraphsplit[colIter].count(" ")) < ((input_paragraphsplit[rowIter].count(" ")) * 1.20)) or (((paragraphsplit[colIter].count(" ")) * 0.80) < (input_paragraphsplit[rowIter].count(" ")) < ((paragraphsplit[colIter].count(" ")) * 1.20)):
-                        if (((inputsentencecount)*0.80) < (docsentencecount) < ((inputsentencecount)*1.20)) or (((docsentencecount)*0.80) <(inputsentencecount) <((docsentencecount)*1.20)):
+                        if (((inputsentencecount)*0.90) < (docsentencecount) < ((inputsentencecount)*1.10)) or (((docsentencecount)*0.90) <(inputsentencecount) <((docsentencecount)*1.10)):
 
-                            if values[colIter] >= 0.90:
+                            if values[colIter] >= 0.85:
                                 print(" ")
                                 percentagesum = percentagesum + values[colIter]
                                 sumcounter = sumcounter + 1
@@ -159,16 +158,20 @@ def main():
                                 print("The similarity percentage between the two is : " + tf.underline +  str("{:.2f}".format(values[colIter]*100)) + "%" + tf.bc)
                                 break
                             break
-
-            if sumcounter <=1:
-                print(tf.red + "There is negligable similarity between the documents" + tf.bc)
+            matches.append(sumcounter)
+            if sumcounter ==0:
+                print(tf.red + "There are neglegable matches between the documents" + tf.bc)
                 all_similarities.append(0)
+            elif sumcounter ==1:
+                print(tf.red + "There are neglegable matches between the documents" + tf.bc)
+                percentage = ((percentagesum / sumcounter) * 100)
+                all_similarities.append(percentage *0.9)
             else:
                 percentage = ((percentagesum/sumcounter)*100)
                 print("Similarity between documents is : " + tf.red + str("{:.2f}".format(percentage)) + "%" + tf.bc)
                 all_similarities.append(percentage)
             print(" ")
                 #print(csimdataframe)#displays the cosine similarity matrix
-    finalsimilar = all_similarities.index(max(all_similarities))
-    print(tf.green + "The input document " + str(input_document) + " is most similar to originaldoc_" + str(finalsimilar+1) + " with a similarity of " + str("{:.2f}".format(max(all_similarities))) + tf.bc)
+    finalmatches = matches.index((max(matches)))
+    print(tf.green + "The input document " + str(input_document) + " is most similar to originaldoc_" + str(finalmatches+1) + " with a similarity of " + str("{:.2f}".format(all_similarities[finalmatches])) + "%" + tf.bc)
 main()
