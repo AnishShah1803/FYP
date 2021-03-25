@@ -16,7 +16,7 @@ class tf: #textformatting
     red = "\033[91m"
 documents = {'originaldoc_1': [1], 'originaldoc_2': [2], 'originaldoc_3': [3], 'originaldoc_4': [4], 'originaldoc_5': [5]
          } #dictionary of original documents
-def paragraphs (file, seperator = '/n'): #iterates through file by new lines and joins together to form string that has newline to replace gaps
+def paragraphs (file, seperator = '\n'): #iterates through file by new lines and joins together to form string that has newline to replace gaps
     lines = [] #instantiate empty list to hold lines
     for line in file:#checks for sperator and joins to previous line
         if line == seperator and lines:
@@ -117,14 +117,19 @@ def main():
             input_paragraphsplit = doc.split("\n")#splits the document into paragraphs
             inputparalist, tag_input_list = tagmaker(input_paragraphsplit, inputParanumber)
             #retrieves the paragraph labels and tags
-            input_vectorizer = CountVectorizer()#creates a tfidf vectorizer
+            input_vectorizer = CountVectorizer()#creates a countvectorizer vectorizer
             inputCountVect = input_vectorizer.fit_transform(tag_input_list)#fits the vectorizer to the tags
+            #inputsk = pd.DataFrame(inputCountVect.todense())
+            #print(inputsk)
+            #print(" ")
         for i in docs[0]:#for each document in the docs list
             paranumber = i.count("\n") #counts the number of paragraphs
             paragraphsplit = i.split("\n")#splits the documents into paragraphsplit list
             paralist, tag_para_list = tagmaker(paragraphsplit, paranumber)#retrieves the paragraph labels and tags
             vectorizer = CountVectorizer() #creates a tfidf vectorizer
             docCountVect = vectorizer.fit_transform(tag_para_list) #fits  the vectorizer to the tags
+            #docsk = pd.DataFrame(docCountVect.todense())
+            #print(docsk)
             csim = cosine_similarity(inputCountVect, docCountVect)
             #calculates the cosine similarity between input document and document from corpus
             csimdataframe = pd.DataFrame(csim,index = (inputparalist), columns = (paralist))
@@ -174,6 +179,12 @@ def main():
     print(tf.green + "The input document " + str(input_document) + " is most similar to originaldoc_" + str(finalmatches+1) + " with a similarity of " + str("{:.2f}".format(all_similarities[finalmatches])) + "%" + tf.bc)
     #displays overall what document is most similar
 main()
-
 #https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html
 #https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.cosine_similarity.html
+#https://lzone.de/examples/Python%20re.sub
+#https://pandas.pydata.org/pandas-docs/version/0.25.1/reference/api/pandas.DataFrame.to_dense.html
+#https://pypi.org/project/textstat/#:~:text=textstat%20requires%20at%20least%203%20sentences%20for%20a%20result.
+#https://www.geeksforgeeks.org/python-itertools-cycle/
+#https://docs.python.org/3/library/itertools.html
+#https://www.nltk.org/book/ch05.html
+
